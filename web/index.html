@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Consumption Prediction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status.loading {
+            background: #ffeaa7;
+            color: #fdcb6e;
+        }
+
+        .status.success {
+            background: #55efc4;
+            color: #00b894;
+        }
+
+        .status.error {
+            background: #fab1a0;
+            color: #d63031;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3436;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .prediction-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .model-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .model-info p {
+            margin: 5px 0;
+        }
+
+        .error-message {
+            background: #fab1a0;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #636e72;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Power Consumption Predictor</h1>
+            <p>AI-Powered Forecasting for Tetouan, Morocco</p>
+        </div>
+
+        <div class="content">
+            <div id="status" class="status loading">
+                Checking API connection...
+            </div>
+
+            <form id="predictionForm">
+                <div class="row">
+                    <div class="form-group">
+                        <label for="temperature">🌡️ Temperature (°C)</label>
+                        <input type="number" id="temperature" name="temperature" step="0.1" value="20.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="humidity">💧 Humidity (%)</label>
+                        <input type="number" id="humidity" name="humidity" step="0.1" min="0" max="100" value="60.0" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label for="wind_speed">💨 Wind Speed (m/s)</label>
+                        <input type="number" id="wind_speed" name="wind_speed" step="0.01" min="0" value="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="general_diffuse_flows">🌊 General Diffuse Flows</label>
+                        <input type="number" id="general_diffuse_flows" name="general_diffuse_flows" step="0.01" min="0" value="0.05" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label for="diffuse_flows">🌊 Diffuse Flows</label>
+                        <input type="number" id="diffuse_flows" name="diffuse_flows" step="0.01" min="0" value="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="datetime">📅 Date & Time</label>
+                        <input type="datetime-local" id="datetime" name="datetime" required value="2017-12-30T23:50">
+                    </div>
+                </div>
+
+                <button type="submit" id="predictBtn">
+                    🔮 Predict Power Consumption
+                </button>
+            </form>
+
+            <div id="result" class="result">
+                <h3>📊 Prediction Result</h3>
+                <div class="prediction-value">
+                    <span id="predictionValue">-</span> kW
+                </div>
+                <div class="model-info">
+                    <p><strong>Model Type:</strong> <span id="modelType">-</span></p>
+                    <p><strong>R² Score:</strong> <span id="r2Score">-</span></p>
+                    <p><strong>Mean Absolute Error:</strong> <span id="mae">-</span></p>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div class="footer">
+            Built with FastAPI + PyTorch | MLP Model
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        
+        // Set default datetime to 12/30/2017 23:50
+        document.getElementById('datetime').value = '2017-12-30T23:50';
+
+        // Check API health on load
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('status');
+                if (data.model_loaded) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✓ API Connected & Model Loaded';
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '✗ API Connected but Model Not Loaded';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('status');
+                statusEl.className = 'status error';
+                statusEl.textContent = '✗ Cannot Connect to API - Make sure server is running';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('predictBtn');
+            const resultEl = document.getElementById('result');
+            const errorEl = document.getElementById('errorMessage');
+            
+            // Hide previous results
+            resultEl.classList.remove('show');
+            errorEl.classList.remove('show');
+            
+            // Disable button
+            btn.disabled = true;
+            btn.textContent = '🔄 Predicting...';
+            
+            try {
+                // Get form data
+                const formData = {
+                    temperature: parseFloat(document.getElementById('temperature').value),
+                    humidity: parseFloat(document.getElementById('humidity').value),
+                    wind_speed: parseFloat(document.getElementById('wind_speed').value),
+                    general_diffuse_flows: parseFloat(document.getElementById('general_diffuse_flows').value),
+                    diffuse_flows: parseFloat(document.getElementById('diffuse_flows').value),
+                    datetime: new Date(document.getElementById('datetime').value).toISOString()
+                };
+                
+                // Make prediction request
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Show result
+                    document.getElementById('predictionValue').textContent = 
+                        data.predicted_power_consumption.toFixed(2);
+                    document.getElementById('modelType').textContent = 
+                        data.model_info.model_type;
+                    document.getElementById('r2Score').textContent = 
+                        data.model_info.test_r2_score.toFixed(4);
+                    document.getElementById('mae').textContent = 
+                        data.model_info.test_mae.toFixed(2);
+                    
+                    resultEl.classList.add('show');
+                } else {
+                    // Show error
+                    errorEl.textContent = `Error: ${data.detail}`;
+                    errorEl.classList.add('show');
+                }
+            } catch (error) {
+                errorEl.textContent = `Error: ${error.message}`;
+                errorEl.classList.add('show');
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.textContent = '🔮 Predict Power Consumption';
+            }
+        });
+
+        // Check health on page load
+        checkHealth();
+    </script>
+</body>
+</html>
+
